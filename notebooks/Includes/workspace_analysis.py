@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC **Notebook name:** workspace_analysis  
-# MAGIC **Functionality:** runs analysis logic on the workspace api respones and writes the results into a checks tables 
+# MAGIC **Notebook name:** workspace_analysis
+# MAGIC **Functionality:** runs analysis logic on the workspace api respones and writes the results into a checks tables
 
 # COMMAND ----------
 
@@ -61,8 +61,8 @@ from core.dbclient import SatDBClient
 #         masterpwd = dbutils.secrets.get(json_['master_pwd_scope'], json_['master_pwd_key'])
 #         json_.update({'token':token, 'mastername':mastername, 'masterpwd':masterpwd})
 
-# db_client = SatDBClient(json_)        
-        
+# db_client = SatDBClient(json_)
+
 cloud_type = json_['cloud_type']
 workspace_id = json_['workspace_id']
 workspaceId = workspace_id
@@ -70,7 +70,7 @@ workspaceId = workspace_id
 # COMMAND ----------
 
 from pyspark.sql.functions import regexp_replace,col
-spark.sql(f"USE {json_['intermediate_schema']}")
+spark.sql(f"USE `{json_['intermediate_schema']}`")
 
 # COMMAND ----------
 
@@ -101,13 +101,13 @@ import pyspark.sql.functions as F
 #ssh_public_keys
 def ssh_public_keys(df):
     if df is not None and not isEmpty(df):
-        df = df.select(F.col('cluster_id'),F.regexp_replace(F.col('cluster_name'), '[\"\'\\\\]', '_').alias('cluster_name')) 
+        df = df.select(F.col('cluster_id'),F.regexp_replace(F.col('cluster_name'), '[\"\'\\\\]', '_').alias('cluster_name'))
         clusters = df.collect()
         cluster_dict = {i.cluster_id:i.cluster_name for i in clusters}
         print(cluster_dict)
         return (check_id, 1, cluster_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
 if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
@@ -131,11 +131,11 @@ def ssh_public_keysjob(df):
         return (check_id, 0, {'ssh':'no clusters have ssh public key'})
     elif df is not None and not isEmpty(df):
         jobcluster = df.collect()
-        jobcluster_dict = {i.job_id:"ssh_key_present" for i in jobcluster}    
+        jobcluster_dict = {i.job_id:"ssh_key_present" for i in jobcluster}
         print(jobcluster_dict)
         return (check_id, 1, jobcluster_dict)
     else:
-        return (check_id, 0, {})    
+        return (check_id, 0, {})
 
 if enabled:
     tbl_name = 'jobs' + '_' + workspace_id
@@ -160,16 +160,16 @@ def private_link_enabled(df):
         return (check_id, 0, {})
     else:
         private_link = False
-        return (check_id, 1, {'workspaceId' : workspaceId})     
+        return (check_id, 1, {'workspaceId' : workspaceId})
 
 if enabled:
-    tbl_name = 'acctworkspaces' 
+    tbl_name = 'acctworkspaces'
     sql = f'''
         SELECT *
         FROM {tbl_name}
         WHERE private_access_settings_id is not null AND workspace_id = "{workspaceId}"
-    ''' 
-    sqlctrl(workspace_id, sql, private_link_enabled) 
+    '''
+    sqlctrl(workspace_id, sql, private_link_enabled)
 
 # COMMAND ----------
 
@@ -183,10 +183,10 @@ def byopc(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {})
     else:
-        return (check_id, 1,  {'workspaceId': workspaceId})  
+        return (check_id, 1,  {'workspaceId': workspaceId})
 
 if enabled:
-    tbl_name = 'acctworkspaces' 
+    tbl_name = 'acctworkspaces'
     sql = f'''
         SELECT *
         FROM {tbl_name}
@@ -205,15 +205,15 @@ ip_access_list = False
 def public_access_enabled(df):
     if df is not None and len(df.columns)==0:
         ip_access_list = False
-        return (check_id, 1, {'workspaceId': workspaceId})    
+        return (check_id, 1, {'workspaceId': workspaceId})
     if df is not None and not isEmpty(df):
         ip_access_list = True
         return (check_id, 0, {})
     else:
         ip_access_list = False
-        return (check_id, 1, {'workspaceId': workspaceId})   
-    
-if enabled: 
+        return (check_id, 1, {'workspaceId': workspaceId})
+
+if enabled:
     tbl_name = 'ipaccesslist' + '_' + workspace_id
     sql=f'''
       SELECT label,list_type, enabled
@@ -231,14 +231,14 @@ workspaceId = workspace_id
 
 def secure_cluster_connectivity_enabled(df):
     if df is not None and len(df.columns)==0:
-        return (check_id, 1, {'workspaceId': workspaceId})    
+        return (check_id, 1, {'workspaceId': workspaceId})
     if df is not None and not isEmpty(df):
         return (check_id, 0, {})
     else:
-        return (check_id, 1, {'workspaceId': workspaceId})   
-    
-if enabled: 
-    tbl_name = 'acctworkspaces' 
+        return (check_id, 1, {'workspaceId': workspaceId})
+
+if enabled:
+    tbl_name = 'acctworkspaces'
     sql = f'''
           SELECT workspace_id
           FROM {tbl_name}
@@ -260,10 +260,10 @@ def vpc_peering(df):
     else:
         return (check_id, 1, {'workspaceId': workspaceId})
 
-    
-# The 1=1 logic is intentional to get the human input as an answer for this check 
-if enabled:  
-    sqlctrl(workspace_id, '''select * where 1=1''', vpc_peering) 
+
+# The 1=1 logic is intentional to get the human input as an answer for this check
+if enabled:
+    sqlctrl(workspace_id, '''select * where 1=1''', vpc_peering)
 
 # COMMAND ----------
 
@@ -274,11 +274,11 @@ def model_serving_endpoints(df):
     if df is not None and not isEmpty(df) and (ip_access_list==False and private_link == False):
         model_serving_endpoints_list = df.collect()
         model_serving_endpoints_dict = {i.model_name : [i.endpoint_type,i.config] for i in model_serving_endpoints_list}
-        
+
         return (check_id, 1, model_serving_endpoints_dict)
     else:
-        return (check_id, 0, {'model_serving_endpoints':'Model serving endpoints protected with IP access list or private link'})   
-if enabled:    
+        return (check_id, 0, {'model_serving_endpoints':'Model serving endpoints protected with IP access list or private link'})
+if enabled:
     tbl_name = 'model_serving_endpoints' + '_' + workspace_id
     sql=f'''
         SELECT model_name, endpoint_type, config
@@ -307,16 +307,16 @@ def sso_rule(df):
         return (check_id, 0, {})
     else:
         return (check_id, 1, {'workspaceId': workspaceId})
-    
+
 
     #The 1=1 logic is intentional to get the human input as an answer for this check
 if enabled:
-    sqlctrl(workspace_id, '''select * where 1=1''', sso_rule) 
+    sqlctrl(workspace_id, '''select * where 1=1''', sso_rule)
 
 # COMMAND ----------
 
 # DBTITLE 1,SCIM
-check_id='19' #SCIM  
+check_id='19' #SCIM
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def scim_rule(df):
@@ -327,7 +327,7 @@ def scim_rule(df):
 
 #The 1=1 logic is intentional to get the human input as an answer for this check
 if enabled:
-   sqlctrl(workspace_id, '''select * where 1=1''', scim_rule) 
+   sqlctrl(workspace_id, '''select * where 1=1''', scim_rule)
 
 # COMMAND ----------
 
@@ -343,7 +343,7 @@ def rbac_rule(df):
 
 #The 1=1 logic is intentional to get the human input as an answer for this check
 if enabled:
-    sqlctrl(workspace_id, '''select * where 1=1''', rbac_rule) 
+    sqlctrl(workspace_id, '''select * where 1=1''', rbac_rule)
 
 # COMMAND ----------
 
@@ -351,12 +351,12 @@ if enabled:
 # MAGIC ## Token Management (IA-4)
 # MAGIC
 # MAGIC ### Best Practice
-# MAGIC Customers can use the token management API or UI controls to enable or disable personal access tokens (PATs), limit the users who are allowed to use PATs or their max lifetime, and list and manage existing PATs. Highly-secure customers will typically provision a max token lifetime for a workspace. 
+# MAGIC Customers can use the token management API or UI controls to enable or disable personal access tokens (PATs), limit the users who are allowed to use PATs or their max lifetime, and list and manage existing PATs. Highly-secure customers will typically provision a max token lifetime for a workspace.
 # MAGIC
 # MAGIC ### Documentation
 # MAGIC ([AWS](https://docs.databricks.com/administration-guide/access-control/tokens.html)) ([Azure](https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/authentication))
 # MAGIC
-# MAGIC  
+# MAGIC
 
 # COMMAND ----------
 
@@ -365,16 +365,16 @@ check_id='21' #PAT Token with no lifetime limit
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 expiry_limit_evaluation_value = sbp_rec['evaluation_value']
 def token_rule(df):
-    #Check for count of tokens that are either set to expire in over 90 days from today or set to never expire. 
+    #Check for count of tokens that are either set to expire in over 90 days from today or set to never expire.
     if df is not None and not isEmpty(df) and len(df.collect()) > 1:
-        df = df.select(F.col('created_by_username'),F.regexp_replace(F.col('comment'), '[\"\'\\\\]', '_').alias('comment'),F.col("token_id"))           
+        df = df.select(F.col('created_by_username'),F.regexp_replace(F.col('comment'), '[\"\'\\\\]', '_').alias('comment'),F.col("token_id"))
         tokenslst = df.collect()
         tokens_dict = {i.token_id : [i.created_by_username, i.comment] for i in tokenslst}
         print(tokens_dict)
         return (check_id, 1, tokens_dict )
     else:
-        return (check_id, 0, {})   
-    
+        return (check_id, 0, {})
+
 if enabled:
     tbl_name = 'tokens' + '_' + workspace_id
     sql = f'''
@@ -391,16 +391,16 @@ check_id='7' # PAT Tokens About to Expire
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 expiry_limit_evaluation_value = sbp_rec['evaluation_value']
 def token_rule(df):
-    #Check for count of tokens that expiring in expiry_limit_evaluation_value days from today. 
+    #Check for count of tokens that expiring in expiry_limit_evaluation_value days from today.
     if df is not None and not isEmpty(df) and len(df.collect()) >= 1:
-        df = df.select(F.col('created_by_username'),F.regexp_replace(F.col('comment'), '[\"\'\\\\]', '_').alias('comment'),F.col("token_id"))             
+        df = df.select(F.col('created_by_username'),F.regexp_replace(F.col('comment'), '[\"\'\\\\]', '_').alias('comment'),F.col("token_id"))
         tokenslst = df.collect()
         tokens_dict = {i.token_id : [i.created_by_username, i.comment] for i in tokenslst}
         print(tokens_dict)
         return (check_id, 1, tokens_dict )
     else:
-        return (check_id, 0, {})   
-    
+        return (check_id, 0, {})
+
 if enabled:
     tbl_name = 'tokens' + '_' + workspace_id
     sql = f'''
@@ -415,21 +415,21 @@ if enabled:
 
 check_id='41' # Check for active tokens that have a lifetime that exceeds the max lifetime set - this happens for the old tokes
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
-    
+
 def token_max_life_rule(df):
-    #Check for count of tokens that expiring in expiry_limit_evaluation_value days from today. 
+    #Check for count of tokens that expiring in expiry_limit_evaluation_value days from today.
     if df is not None and not isEmpty(df) and len(df.collect()) > 1:
-        df = df.select(F.col('created_by_username'),F.regexp_replace(F.col('comment'), '[\"\'\\\\]', '_').alias('comment'),F.col("token_id"))             
+        df = df.select(F.col('created_by_username'),F.regexp_replace(F.col('comment'), '[\"\'\\\\]', '_').alias('comment'),F.col("token_id"))
         tokenslst = df.collect()
         tokens_dict = {i.token_id : [i.created_by_username, i.comment] for i in tokenslst}
         print(tokens_dict)
         return (check_id, 1, tokens_dict )
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
 
 if enabled and any(table.name =='workspacesettings' + '_' + workspace_id for table in spark.catalog.listTables(json_["intermediate_schema"])):
-    # get maxTokenLifetimeDays  and check if it is set 
+    # get maxTokenLifetimeDays  and check if it is set
     tbl_name = 'workspacesettings' + '_' + workspace_id
     sql = f'''
             SELECT * 
@@ -437,7 +437,7 @@ if enabled and any(table.name =='workspacesettings' + '_' + workspace_id for tab
             WHERE name="maxTokenLifetimeDays"
     '''
     df = spark.sql(sql)
-    if df.count()>0:        
+    if df.count()>0:
         dict_elems = df.collect()[0]
         expiry_limit_evaluation_value = dict_elems['value']
     if expiry_limit_evaluation_value is not None and expiry_limit_evaluation_value != "null" and  expiry_limit_evaluation_value != "false" and int(expiry_limit_evaluation_value) > 0:
@@ -456,13 +456,13 @@ if enabled and any(table.name =='workspacesettings' + '_' + workspace_id for tab
 check_id='27' #Admin Count
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 admin_count_evaluation_value = sbp_rec['evaluation_value']
-def admin_rule(df):  
+def admin_rule(df):
     if df is not None and not isEmpty(df) and  len(df.collect()) > admin_count_evaluation_value:
-        df = df.select(F.regexp_replace(F.col('Admins'), '[\"\'\\\\]', '_').alias('Admins'))     
+        df = df.select(F.regexp_replace(F.col('Admins'), '[\"\'\\\\]', '_').alias('Admins'))
         adminlist = df.collect()
         adminlist_1 = [i.Admins for i in adminlist]
         adminlist_dict = {"admins" : adminlist_1}
-    
+
         return (check_id, 1, adminlist_dict)
     else:
         return (check_id, 0, {})
@@ -481,7 +481,7 @@ if enabled:
 check_id='42' #Use service principals
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 service_principals_evaluation_value = sbp_rec['evaluation_value']
-def use_service_principals(df):  
+def use_service_principals(df):
     if df is not None and not isEmpty(df) and  len(df.collect()) >= service_principals_evaluation_value:
         return (check_id, 0, {'SPs': len(df.collect())})
     else:
@@ -500,7 +500,7 @@ if enabled:
 # MAGIC %md
 # MAGIC # Data Protection
 # MAGIC * Secrets
-# MAGIC * Encryption 
+# MAGIC * Encryption
 # MAGIC * Table ACL
 
 # COMMAND ----------
@@ -517,7 +517,7 @@ def secrets_rule(df):
         return (check_id, 0, secrets_dict )
     else:
         secrets_dict = {'found_num_secrets' : secrets_count_evaluation_value}
-        return (check_id, 1, {})   
+        return (check_id, 1, {})
 
 if enabled:
     tbl_name = 'secretslist' + '_' + workspace_id
@@ -525,7 +525,7 @@ if enabled:
                SELECT count(*) 
                FROM {tbl_name}
                
-    ''' 
+    '''
     sqlctrl(workspace_id,sql, secrets_rule)
 
 # COMMAND ----------
@@ -538,17 +538,17 @@ def local_disk_encryption(df):
     if df is not None and len(df.columns) == 0:
         cluster_dict = {'clusters' : 'all_interactive_clusters'}
         print(cluster_dict)
-        return (check_id, 1, cluster_dict) 
+        return (check_id, 1, cluster_dict)
     elif df is not None and not isEmpty(df):
-        df = df.select(F.col('cluster_id'), F.regexp_replace(F.col('cluster_name'), '[\"\'\\\\]', '_').alias('cluster_name'))  
+        df = df.select(F.col('cluster_id'), F.regexp_replace(F.col('cluster_name'), '[\"\'\\\\]', '_').alias('cluster_name'))
         clusters = df.collect()
         clusterslst = [[i.cluster_id, i.cluster_name] for i in clusters]
         clusters_dict = {"clusters" : clusterslst}
         print(clusters_dict)
         return (check_id, 1, clusters_dict)
     else:
-        return (check_id, 0, {})   
-  
+        return (check_id, 0, {})
+
 if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     sql = f'''
@@ -566,16 +566,16 @@ enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 workspaceId = workspace_id
 # Report on workspaces that do not have a byok id associated with them
-def byok_check(df):   
+def byok_check(df):
     if df is not None and not isEmpty(df):
         ws = df.collect()
         ws_dict = {'workspaces' : ws}
         return (check_id, 1, ws_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
 if enabled:
-    tbl_name = 'acctworkspaces' 
+    tbl_name = 'acctworkspaces'
     sql = f'''
         SELECT workspace_id
           FROM {tbl_name}
@@ -597,7 +597,7 @@ def object_storage_encryption_rule(df):
         return (check_id, 1, {'workspaceId': workspaceId})
 
 #The 1=1 logic is intentional to get the human/manual input as an answer for this check
-if enabled:  
+if enabled:
     sqlctrl(workspace_id, '''select * where 1=1''', object_storage_encryption_rule)
 
 # COMMAND ----------
@@ -609,11 +609,11 @@ def vector_search_endpoint_list(df):
     if df is not None and not isEmpty(df):
         vector_search_endpoint_list = df.collect()
         vector_search_endpoint_dict = {i.name : [i.endpoint_type, i.creator, i.num_indexes] for i in vector_search_endpoint_list}
-        
+
         return (check_id, 0, vector_search_endpoint_dict )
     else:
-        return (check_id, 1, {'vector_search_endpoint_list':'No Vector Search Endpoints found'})  
-if enabled:    
+        return (check_id, 1, {'vector_search_endpoint_list':'No Vector Search Endpoints found'})
+if enabled:
     tbl_name = 'vector_search_endpoint_list' + '_' + workspace_id
     sql=f'''
         SELECT *
@@ -641,16 +641,16 @@ def cluster_policy_check(df):
     if df is not None and len(df.columns)==0:
         cluster_dict = {'clusters' : 'all_interactive_clusters'}
         print(cluster_dict)
-        return (check_id, 1, cluster_dict)    
+        return (check_id, 1, cluster_dict)
     elif df is not None and not isEmpty(df):
-        df = df.withColumn('cluster_name', regexp_replace(col('cluster_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'cluster_name')     
+        df = df.withColumn('cluster_name', regexp_replace(col('cluster_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'cluster_name')
         clusters = df.collect()
         cluster_dict = {'clusters' : clusters}
         return (check_id, 1, cluster_dict)
     else:
-        return (check_id, 0,  {})   
-  
-if enabled:  
+        return (check_id, 0,  {})
+
+if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     sql = f'''
         SELECT cluster_id, cluster_name, policy_id
@@ -666,22 +666,22 @@ if enabled:
 # COMMAND ----------
 
 # DBTITLE 1,Custom Tags All Purpose Cluster
-check_id='11' #All Purpose Cluster Custom Tags 
+check_id='11' #All Purpose Cluster Custom Tags
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def ctags_check(df):
-  
+
     if df is not None and not isEmpty(df) :
-        df = df.withColumn('cluster_name', regexp_replace(col('cluster_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'cluster_name')  
+        df = df.withColumn('cluster_name', regexp_replace(col('cluster_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'cluster_name')
         clusters = df.collect()
         clusters_dict = {'clusters' : [[i.cluster_id, i.cluster_name] for i in clusters]}
         print(clusters_dict)
         return (check_id, 1, clusters_dict)
     else:
-        return (check_id, 0, {})   
- 
+        return (check_id, 0, {})
 
-if enabled: 
+
+if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     sql = f'''
         SELECT cluster_id, cluster_name
@@ -697,17 +697,17 @@ check_id='12' #Job Cluster Custom Tags
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def ctags_checkjobs(df):
-  
+
     if df is not None and not isEmpty(df):
         jobclusters = df.collect()
         jobclusters_dict = {'clusters' : [i.job_id for i in jobclusters]}
         print(jobclusters_dict)
         return (check_id, 1, jobclusters_dict)
     else:
-        return (check_id, 0, {})   
-  
+        return (check_id, 0, {})
 
-if enabled:  
+
+if enabled:
     tbl_name = 'jobs' + '_' + workspace_id
     sql = f'''
         SELECT job_id
@@ -726,16 +726,16 @@ def logconf_check(df):
     if df is not None and len(df.columns)==0:
         cluster_dict = {'clusters' : 'no log conf in any job'}
         print(cluster_dict)
-        return (check_id, 1, cluster_dict)     
-    elif df is not None and not isEmpty(df): 
-        df = df.withColumn('cluster_name', regexp_replace(col('cluster_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'cluster_name')  
+        return (check_id, 1, cluster_dict)
+    elif df is not None and not isEmpty(df):
+        df = df.withColumn('cluster_name', regexp_replace(col('cluster_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'cluster_name')
         clusters = df.collect()
         clusters_dict = {'clusters' : [[i.cluster_id, i.cluster_name] for i in clusters]}
         print(clusters_dict)
         return (check_id, 1, clusters_dict)
     else:
-        return (check_id, 0, {})   
-    
+        return (check_id, 0, {})
+
 if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     sql=f'''
@@ -748,25 +748,25 @@ if enabled:
 # COMMAND ----------
 
 # DBTITLE 1,Cluster Log Conf jobs
-check_id='14' #Job Cluster Log Configuration 
+check_id='14' #Job Cluster Log Configuration
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def logconf_check_job(df):
-  
+
     if df is not None and len(df.columns)==0:
         cluster_dict = {'clusters' : 'no log conf in any job'}
         print(cluster_dict)
-        return (check_id, 1, cluster_dict)    
+        return (check_id, 1, cluster_dict)
     elif df is not None and not isEmpty(df):
         jobclusters = df.collect()
         jobclusters_dict = {'jobs' : [i.job_id for i in jobclusters]}
         print(jobclusters_dict)
         return (check_id, 1, jobclusters_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
-    
-if enabled:  
+
+if enabled:
     tbl_name = 'jobs' + '_' + workspace_id
     sql = f'''
         SELECT job_id 
@@ -782,16 +782,16 @@ check_id='15'  #Managed Tables
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 dbfs_warehouses_evaluation_value = sbp_rec['evaluation_value']
 def dbfs_check(df):
-  
+
     if df is not None and not isEmpty(df) and len(df.collect()) >= dbfs_warehouses_evaluation_value:
         paths = df.collect()
         paths_dict = {'paths' : [i.path for i in paths]}
         return (check_id, 1, paths_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
-    
-if enabled:    
+
+if enabled:
     tbl_name = 'dbfssettingsdirs' + '_' + workspace_id
     sql = f'''
         SELECT path
@@ -806,17 +806,17 @@ check_id='16' #Mounts
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 dbfs_fuse_mnt_evaluation_value = sbp_rec['evaluation_value']
 def dbfs_mnt_check(df):
-  
+
     if df is not None and not isEmpty(df) and len(df.collect())>=dbfs_fuse_mnt_evaluation_value:
         mounts = df.collect()
         mounts_dict = {'mnts' : [i.path for i in mounts]}
         print(mounts_dict)
         return (check_id, 1, mounts_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
-    
-if enabled:     
+
+if enabled:
     tbl_name = 'dbfssettingsmounts' + '_' + workspace_id
     sql =f'''
         SELECT path
@@ -826,26 +826,26 @@ if enabled:
 
 # COMMAND ----------
 
-# DBTITLE 1,Global init scripts 
+# DBTITLE 1,Global init scripts
 check_id='26' #Global libraries
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def initscr_check(df):
-    if df is not None and not isEmpty(df):   
+    if df is not None and not isEmpty(df):
         iscript = df.collect()
         iscripts_dict = {'scripts' : [[i.name, i.created_by, i.enabled] for i in iscript]}
         print(iscripts_dict)
         return (check_id,1, iscripts_dict)
     else:
-        return (check_id,0, {})   
+        return (check_id,0, {})
 
-    
-if enabled:   
+
+if enabled:
     tbl_name = 'globalscripts' + '_' + workspace_id
     sql = f'''
         SELECT name, created_by, enabled
           FROM {tbl_name}
-    ''' 
+    '''
     sqlctrl(workspace_id, sql, initscr_check)
 
 # COMMAND ----------
@@ -854,22 +854,22 @@ check_id='64' #Init Scripts on DBFS
 enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def initscr_on_dbfs(df):
-    if df is not None and not isEmpty(df):   
+    if df is not None and not isEmpty(df):
         df = df.withColumn('path', regexp_replace(col('path'), '[\"\'\\\\]', '_')).select('is_dir', 'path')
         iscript = df.collect()
         iscripts_dict = {'scripts' : [[i.path, i.is_dir] for i in iscript]}
         print(iscripts_dict)
         return (check_id,1, iscripts_dict)
     else:
-        return (check_id,0, {})   
+        return (check_id,0, {})
 
-    
-if enabled:   
+
+if enabled:
     tbl_name = 'legacyinitscripts' + '_' + workspace_id
     sql = f'''
         SELECT path, is_dir
           FROM {tbl_name}
-    ''' 
+    '''
     sqlctrl(workspace_id, sql, initscr_on_dbfs)
 
 # COMMAND ----------
@@ -880,15 +880,15 @@ enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def pool_check(df):
     if df is not None and not isEmpty(df):
-        df = df.withColumn('instance_pool_name', regexp_replace(col('instance_pool_name'), '[\"\'\\\\]', '_')).select('instance_pool_name', 'instance_pool_id') 
+        df = df.withColumn('instance_pool_name', regexp_replace(col('instance_pool_name'), '[\"\'\\\\]', '_')).select('instance_pool_name', 'instance_pool_id')
         ipool = df.collect()
         ipool_dict = {'instancepools' : [[i.instance_pool_name, i.instance_pool_id] for i in ipool]}
         print(ipool_dict)
-        return (check_id, 1,  ipool_dict)  
+        return (check_id, 1,  ipool_dict)
     else:
-        return (check_id, 0, {}) 
+        return (check_id, 0, {})
 
-    
+
 if enabled:
     tbl_name = 'pools' + '_' + workspace_id
     sql = f'''
@@ -911,10 +911,10 @@ def mcr_check(df):
         print(mcr_dict)
         return (check_id, 1, mcr_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
-    
-if enabled:  
+
+if enabled:
     tbl_name = 'jobs' + '_' + workspace_id
     sql = f'''
         SELECT job_id, settings.max_concurrent_runs
@@ -936,9 +936,9 @@ def lib_check(df):
         libc_dict = {'globlib' : [i.cluster_id for i in libc]}
         return (check_id, 1, libc_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
-    
+
 if enabled:
     tbl_name = 'libraries' + '_' + workspace_id
     sql = f'''
@@ -947,7 +947,7 @@ if enabled:
             (SELECT cluster_id, explode(library_statuses.is_library_for_all_clusters) as glob_lib FROM {tbl_name})a
         WHERE glob_lib=true 
     '''
-    sqlctrl(workspace_id, sql, lib_check) 
+    sqlctrl(workspace_id, sql, lib_check)
 
 # COMMAND ----------
 
@@ -963,10 +963,10 @@ def cc_check(df):
         print(libc_dict)
         return (check_id, 1, libc_dict)
     else:
-        return (check_id, 0, {})   
+        return (check_id, 0, {})
 
-    
-if enabled:  
+
+if enabled:
     tbl_name = 'users' + '_' + workspace_id
     sql=f'''
         SELECT userName, perm 
@@ -987,17 +987,17 @@ workspaceId = workspace_id
 
 def log_check(df):
     if df is not None and not isEmpty(df) and len(df.collect())>=1:
-        df = df.withColumn('config_name', regexp_replace(col('config_name'), '[\"\'\\\\]', '_')).select('config_name', 'config_id')      
+        df = df.withColumn('config_name', regexp_replace(col('config_name'), '[\"\'\\\\]', '_')).select('config_name', 'config_id')
         logc = df.collect()
         logc_dict = {'audit_logs' : [[i.config_name, i.config_id] for i in logc]}
-        
+
         print(logc_dict)
         return (check_id, 0, logc_dict)
     else:
-        return (check_id, 1, {})   
+        return (check_id, 1, {})
 
-if enabled:   
-    tbl_name = 'acctlogdelivery' 
+if enabled:
+    tbl_name = 'acctlogdelivery'
     sql=f'''
         SELECT config_name, config_id  
         FROM {tbl_name} 
@@ -1018,9 +1018,9 @@ def time_check(df):
         print(timlst_dict)
         if (len(timlst_dict)) > 0:
             return (check_id, 1, timlst_dict)
-    return (check_id, 0, {})   
+    return (check_id, 0, {})
 
-if enabled:   
+if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     sql=f'''
         SELECT cluster_id, current_time, last_restart, datediff(current_time,last_restart) as diff 
@@ -1041,14 +1041,14 @@ enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 def versions_check(df):
     if df is not None and not isEmpty(df) and len(df.collect())>=1:
         df = df.withColumn('cluster_name', regexp_replace(col('config_name'), '[\"\'\\\\]', '_')).select('cluster_id', 'spark_version','cluster_name')
-        
+
         verlst = df.collect()
-        verlst_dict = {irow.cluster_id: "cluster_name:"+irow.cluster_name+" version:"+irow.spark_version for irow in verlst} 
+        verlst_dict = {irow.cluster_id: "cluster_name:"+irow.cluster_name+" version:"+irow.spark_version for irow in verlst}
         print(verlst_dict)
         return (check_id, 1, verlst_dict)
-    return (check_id, 0, {})   
+    return (check_id, 0, {})
 
-if enabled:    
+if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     tbl_name_inner = 'spark_versions' + '_' + workspace_id
     sql=f'''SELECT cluster_id, cluster_name, spark_version 
@@ -1065,14 +1065,14 @@ enabled, sbp_rec = getSecurityBestPracticeRecord(check_id, cloud_type)
 
 def uc_check(df):
     if df is not None and not isEmpty(df):
-        df = df.select(F.col('cluster_id'),F.regexp_replace(F.col('cluster_name'), '[\"\'\\\\]', '_').alias('cluster_name'))         
+        df = df.select(F.col('cluster_id'),F.regexp_replace(F.col('cluster_name'), '[\"\'\\\\]', '_').alias('cluster_name'))
         uclst = df.collect()
         uclst_dict = {i.cluster_id : [i.cluster_name] for i in uclst}
-    
-        return (check_id, 1, uclst_dict)
-    return (check_id, 0, {})   
 
-if enabled:    
+        return (check_id, 1, uclst_dict)
+    return (check_id, 0, {})
+
+if enabled:
     tbl_name = 'clusters' + '_' + workspace_id
     sql=f'''
         SELECT cluster_id, cluster_name 
@@ -1094,8 +1094,8 @@ def uc_metasore_assignment(df):
         uc_metasore_dict = {i.metastore_id : [i.workspace_id] for i in uc_metasore}
         return (check_id, 0, uc_metasore_dict )
     else:
-        return (check_id, 1, {})   
-if enabled:    
+        return (check_id, 1, {})
+if enabled:
     tbl_name = 'unitycatalogmsv2' + '_' + workspace_id
     sql=f'''
         SELECT metastore_id,workspace_id
@@ -1116,8 +1116,8 @@ def uc_metasore_token(df):
         uc_metasore_dict = {num: [row.name,row.delta_sharing_recipient_token_lifetime_in_seconds] for num,row in enumerate(uc_metasore)}
         return (check_id, 1, uc_metasore_dict )
     else:
-        return (check_id, 0, {})   
-if enabled:    
+        return (check_id, 0, {})
+if enabled:
     tbl_name = 'unitycatalogmsv1' + '_' + workspace_id
     sql=f'''
         SELECT name, delta_sharing_recipient_token_lifetime_in_seconds
@@ -1125,7 +1125,7 @@ if enabled:
         WHERE delta_sharing_scope ="INTERNAL_AND_EXTERNAL" AND delta_sharing_recipient_token_lifetime_in_seconds < 7776000
     '''
     sqlctrl(workspace_id, sql, uc_metasore_token)
-    
+
 
 # COMMAND ----------
 
@@ -1138,8 +1138,8 @@ def uc_delta_share_ip_accesslist(df):
         uc_metasore_dict = {num: [row.name,row.owner] for num,row in enumerate(uc_metasore)}
         return (check_id, 1, uc_metasore_dict )
     else:
-        return (check_id, 0, {})   
-if enabled:    
+        return (check_id, 0, {})
+if enabled:
     tbl_name = 'unitycatalogsharerecipients' + '_' + workspace_id
     sql=f'''
         SELECT name, owner
@@ -1147,7 +1147,7 @@ if enabled:
         where authentication_type = 'TOKEN' and ip_access_list is NULL
     '''
     sqlctrl(workspace_id, sql, uc_delta_share_ip_accesslist)
-    
+
 
 # COMMAND ----------
 
@@ -1160,8 +1160,8 @@ def uc_delta_share_expiration_time(df):
         uc_metasore_dict = {num: [row.name,row.owner] for num,row in enumerate(uc_metasore)}
         return (check_id, 1, uc_metasore_dict )
     else:
-        return (check_id, 0, {})   
-if enabled:    
+        return (check_id, 0, {})
+if enabled:
     tbl_name = 'unitycatalogsharerecipients' + '_' + workspace_id
     sql=f'''
         SELECT tokens.* FROM (select explode(tokens) as tokens, full_name, owner
@@ -1169,7 +1169,7 @@ if enabled:
         WHERE authentication_type = 'TOKEN')   WHERE tokens.expiration_time is NULL 
     '''
     sqlctrl(workspace_id, sql, uc_delta_share_expiration_time)
- 
+
 
 # COMMAND ----------
 
@@ -1182,8 +1182,8 @@ def uc_metastore(df):
         uc_metasore_dict = {i.name : [i.owner] for i in uc_metasore}
         return (check_id, 0, uc_metasore_dict )
     else:
-        return (check_id, 1, {})   
-if enabled:    
+        return (check_id, 1, {})
+if enabled:
     tbl_name = 'unitycatalogmsv1' + '_' + workspace_id
     sql=f'''
         SELECT name,owner
@@ -1191,7 +1191,7 @@ if enabled:
         WHERE securable_type = 'METASTORE'
     '''
     sqlctrl(workspace_id, sql, uc_metastore)
- 
+
 
 # COMMAND ----------
 
@@ -1204,8 +1204,8 @@ def uc_metastore_owner(df):
         uc_metasore_dict = {i.name : [i.owner, i.created_by] for i in uc_metasore}
         return (check_id, 1, uc_metasore_dict )
     else:
-        return (check_id, 0, {})   
-if enabled:    
+        return (check_id, 0, {})
+if enabled:
     tbl_name = 'unitycatalogmsv1' + '_' + workspace_id
     sql=f'''
         SELECT name,owner,created_by
@@ -1213,7 +1213,7 @@ if enabled:
         WHERE securable_type = 'METASTORE' and owner == created_by
     '''
     sqlctrl(workspace_id, sql, uc_metastore_owner)
- 
+
 
 # COMMAND ----------
 
@@ -1226,8 +1226,8 @@ def uc_metastore_storage_creds(df):
         uc_metasore_dict = {num: [row.name,row.owner, row.created_by] for num,row in enumerate(uc_metasore)}
         return (check_id, 1, uc_metasore_dict )
     else:
-        return (check_id, 0, {})   
-if enabled:    
+        return (check_id, 0, {})
+if enabled:
     tbl_name = 'unitycatalogcredentials' + '_' + workspace_id
     sql=f'''
         SELECT name,owner,created_by
@@ -1235,7 +1235,7 @@ if enabled:
         WHERE securable_type = "STORAGE_CREDENTIAL" 
     '''
     sqlctrl(workspace_id, sql, uc_metastore_storage_creds)
- 
+
 
 # COMMAND ----------
 
@@ -1246,11 +1246,11 @@ def uc_dws(df):
     if df is not None and not isEmpty(df):
         uc_metasore = df.collect()
         uc_metasore_dict = {i.name : [i.creator_name] for i in uc_metasore}
-        
+
         return (check_id, 1, uc_metasore_dict )
     else:
-        return (check_id, 0, {})   
-if enabled:    
+        return (check_id, 0, {})
+if enabled:
     tbl_name = 'dbsql_warehouselistv2' + '_' + workspace_id
     sql=f'''
         SELECT warehouse.name as name , warehouse.creator_name as creator_name  from (select explode(warehouses) as warehouse  
@@ -1258,7 +1258,7 @@ if enabled:
         where warehouse.disable_uc = true
     '''
     sqlctrl(workspace_id, sql, uc_dws)
- 
+
 
 # COMMAND ----------
 
@@ -1269,11 +1269,11 @@ def models_in_uc(df):
     if df is not None and not isEmpty(df):
         uc_models = df.collect()
         uc_models_dict = {i.name : [i.full_name] for i in uc_models}
-        
+
         return (check_id, 0, uc_models_dict )
     else:
-        return (check_id, 1, {})   
-if enabled:    
+        return (check_id, 1, {})
+if enabled:
     tbl_name = 'registered_models' + '_' + workspace_id
     sql=f'''
         SELECT name, catalog_name,schema_name,owner, full_name
@@ -1291,9 +1291,9 @@ def uc_systemschemas(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {'enable_serverless_compute':'access schema with state ENABLE_COMPLETED found'} )
     else:
-        return (check_id, 1, {'enable_serverless_compute':'access schema with state ENABLE_COMPLETED not found'}) 
-    
-if enabled:    
+        return (check_id, 1, {'enable_serverless_compute':'access schema with state ENABLE_COMPLETED not found'})
+
+if enabled:
     tbl_name = 'systemschemas' + '_' + workspace_id
     sql=f'''
         SELECT *
@@ -1311,9 +1311,9 @@ def restrict_workspace_admin_settings(df):
     if df is not None and not isEmpty(df):
         return (check_id, 1, {'restrict_workspace_admin_settings':'Found status as ALLOW_ALL, to disable the RestrictWorkspaceAdmins set the status to ALLOW_ALL'} )
     else:
-        return (check_id, 0, {'restrict_workspace_admin_settings':'RestrictWorkspaceAdmins set the status to ALLOW_ALL'}) 
-    
-if enabled:    
+        return (check_id, 0, {'restrict_workspace_admin_settings':'RestrictWorkspaceAdmins set the status to ALLOW_ALL'})
+
+if enabled:
     tbl_name = 'restrict_workspace_admin_settings' + '_' + workspace_id
     sql=f'''
         SELECT *
@@ -1330,9 +1330,9 @@ def automatic_cluster_update(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {'automatic_cluster_update':'Found status as true to automatic cluster update setting'} )
     else:
-        return (check_id, 1, {'automatic_cluster_update':'Found status as false to automatic cluster update setting'}) 
-    
-if enabled:    
+        return (check_id, 1, {'automatic_cluster_update':'Found status as false to automatic cluster update setting'})
+
+if enabled:
     tbl_name = 'automatic_cluster_update' + '_' + workspace_id
     sql=f'''
         SELECT *
@@ -1350,8 +1350,8 @@ def dbsql_enable_serverless_compute(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {'enable_serverless_compute':'Serverless Compute enabled'} )
     else:
-        return (check_id, 1, {'enable_serverless_compute':'Serverless Compute not enabled'})   
-if enabled:    
+        return (check_id, 1, {'enable_serverless_compute':'Serverless Compute not enabled'})
+if enabled:
     tbl_name = 'dbsql_workspaceconfig' + '_' + workspace_id
     sql=f'''
         SELECT enable_serverless_compute FROM
@@ -1359,7 +1359,7 @@ if enabled:
         WHERE enable_serverless_compute = true
     '''
     sqlctrl(workspace_id, sql, dbsql_enable_serverless_compute)
- 
+
 
 # COMMAND ----------
 
@@ -1373,7 +1373,7 @@ def metastore_delta_sharing_permissions(df):
         return (check_id, 0, uc_metasore_dict ) # intentionally kept the score to 0 as its not a pass or fail. Its more of FYI
     else:
         return (check_id, 0, {})   # intentionally kept the score to 0 as its not a pass or fail. Its more of FYI
-if enabled:    
+if enabled:
     tbl_name = 'metastorepermissions' + '_' + workspace_id
     sql=f'''
         SELECT * FROM (SELECT metastore_name,principal,explode(privileges) as privilege  
@@ -1391,11 +1391,11 @@ def model_serving_endpoints_external_model(df):
     if df is not None and not isEmpty(df) and df.count()>1:
         model_serving_endpoints_list = df.collect()
         model_serving_endpoints_dict = {i.name : [i.endpoint_type,i.config] for i in model_serving_endpoints_list}
-        
+
         return (check_id, 0, model_serving_endpoints_dict)
     else:
-        return (check_id, 1, {'model_serving_endpoints_external_model':'No model serving endpoints with endpoint type EXTERNAL_MODEL found'})   
-if enabled:    
+        return (check_id, 1, {'model_serving_endpoints_external_model':'No model serving endpoints with endpoint type EXTERNAL_MODEL found'})
+if enabled:
     tbl_name = 'model_serving_endpoints' + '_' + workspace_id
     sql=f'''
         SELECT name, endpoint_type, config
@@ -1413,8 +1413,8 @@ def third_party_library_control(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {'third_party_library_control':'Artifact allowlist configured'})
     else:
-        return (check_id, 1, {'third_party_library_control':'No artifact allowlist configured'})   
-if enabled:    
+        return (check_id, 1, {'third_party_library_control':'No artifact allowlist configured'})
+if enabled:
     tbl_name_1 = 'artifacts_allowlists_library_jars' + '_' + workspace_id
     tbl_name_2 = 'artifacts_allowlists_library_mavens' + '_' + workspace_id
     sql=f'''
@@ -1441,8 +1441,8 @@ def compliance_security_profile_account(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {'compliance security profile setting for new workspaces':'True'})
     else:
-        return (check_id, 1, {'compliance security profile setting for new workspaces':'False'})   
-if enabled:    
+        return (check_id, 1, {'compliance security profile setting for new workspaces':'False'})
+if enabled:
     tbl_name = 'account_csp'
     sql=f'''
         SELECT *
@@ -1461,8 +1461,8 @@ def compliance_security_profile(df):
         compliance_security_profile_list = df.collect()
         return (check_id, 0, {'compliance_standards':compliance_security_profile_list[0]})
     else:
-        return (check_id, 1, {'compliance security profile setting for this workspace':'False'})   
-if enabled:    
+        return (check_id, 1, {'compliance security profile setting for this workspace':'False'})
+if enabled:
     tbl_name = 'compliance_security_profile'+'_' + workspace_id
     sql=f'''
         SELECT compliance_security_profile_workspace
@@ -1480,8 +1480,8 @@ def enhanced_security_monitoring(df):
     if df is not None and not isEmpty(df):
         return (check_id, 0, {'enhanced security monitoring setting for this workspace':'True'})
     else:
-        return (check_id, 1, {'enhanced security monitoring for this workspace':'False'})   
-if enabled:    
+        return (check_id, 1, {'enhanced security monitoring for this workspace':'False'})
+if enabled:
     tbl_name = 'enhanced_security_monitoring'+'_' + workspace_id
     sql=f'''
         SELECT *

@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC **Notebook name:** accounts_bootstrap      
-# MAGIC **Functionality:** Notebook that queries the account level APIs and creates temp tables with the results.  
+# MAGIC **Notebook name:** accounts_bootstrap
+# MAGIC **Functionality:** Notebook that queries the account level APIs and creates temp tables with the results.
 
 # COMMAND ----------
 
@@ -55,7 +55,7 @@ from core.dbclient import SatDBClient
 if cloud_type =='azure': # use client secret
   client_secret = dbutils.secrets.get(json_['master_name_scope'], json_["client_secret_key"])
   json_.update({'token':'dapijedi', 'client_secret': client_secret})
-elif (cloud_type =='aws' and json_['use_sp_auth'].lower() == 'true'):  
+elif (cloud_type =='aws' and json_['use_sp_auth'].lower() == 'true'):
     client_secret = dbutils.secrets.get(json_['master_name_scope'], json_["client_secret_key"])
     json_.update({'token':'dapijedi', 'client_secret': client_secret})
     mastername =' ' # this will not be present when using SPs
@@ -82,9 +82,9 @@ try:
   if is_successful_acct == True:
       loggr.info("Account Connection successful!")
   else:
-      loggr.info("Unsuccessful account connection. Verify credentials.") 
+      loggr.info("Unsuccessful account connection. Verify credentials.")
 except requests.exceptions.RequestException as e:
-  is_successful_acct = False  
+  is_successful_acct = False
   loggr.exception('Unsuccessful connection. Verify credentials.')
   loggr.exception(e)
 except Exception:
@@ -98,7 +98,7 @@ if not is_successful_acct:
 
 # COMMAND ----------
 
-spark.sql(f"USE {json_['intermediate_schema']}")
+spark.sql(f"USE `{json_['intermediate_schema']}`")
 
 # COMMAND ----------
 

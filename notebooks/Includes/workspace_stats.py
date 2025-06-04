@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC **Notebook name:** workspace_stats  
-# MAGIC **Functionality:** runs analysis logic on the workspace stats and writes the results into a checks tables 
+# MAGIC **Notebook name:** workspace_stats
+# MAGIC **Functionality:** runs analysis logic on the workspace stats and writes the results into a checks tables
 
 # COMMAND ----------
 
@@ -53,7 +53,7 @@ loggr = LoggingUtils.get_logger()
 
 # COMMAND ----------
 
-spark.sql(f"USE {json_['intermediate_schema']}")
+spark.sql(f"USE `{json_['intermediate_schema']}`")
 
 # COMMAND ----------
 
@@ -80,7 +80,7 @@ def getAccountRegion(df):
         return ('AS-2', {'value':df.collect()[0].region}, 'Account Stats')
     elif 'location' in df.collect()[0] and  df.collect()[0].location is not None and df.collect()[0].location:
         return ('AS-2', {'value':df.collect()[0].location}, 'Account Stats')
-    else: 
+    else:
         return ('AS-2', {'value': 0}, 'Account Stats')
   else:
     return ('AS-2', {'value': 0}, 'Account Stats')

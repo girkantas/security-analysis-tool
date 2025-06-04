@@ -231,7 +231,7 @@ else:
 
 display(
     spark.sql(
-        f'select * from {json_["analysis_schema_name"]}.security_checks order by run_id desc, workspaceid asc, check_time asc'
+        f'select * from `{json_["analysis_schema_name"]}`.security_checks order by run_id desc, workspaceid asc, check_time asc'
     )
 )
 
@@ -240,7 +240,7 @@ display(
 
 display(
     spark.sql(
-        f'select * from {json_["analysis_schema_name"]}.workspace_run_complete order by run_id desc'
+        f'select * from `{json_["analysis_schema_name"]}`.workspace_run_complete order by run_id desc'
     )
 )
 
@@ -251,4 +251,4 @@ display(
 
 # COMMAND ----------
 
-spark.sql(f"DROP DATABASE IF EXISTS {json_['intermediate_schema']} CASCADE")
+spark.sql(f"DROP DATABASE IF EXISTS `{json_['intermediate_schema']}` CASCADE")

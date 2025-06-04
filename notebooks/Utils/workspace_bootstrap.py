@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC **Notebook name:** workspace_bootstrap       
-# MAGIC **Functionality:** Notebook that queries the workspace level APIs and creates temp tables with the results. 
+# MAGIC **Notebook name:** workspace_bootstrap
+# MAGIC **Functionality:** Notebook that queries the workspace level APIs and creates temp tables with the results.
 
 # COMMAND ----------
 
@@ -61,7 +61,7 @@ token = ''
 if cloud_type =='azure': #client secret always needed
   client_secret = dbutils.secrets.get(json_['master_name_scope'], json_["client_secret_key"])
   json_.update({'token':token, 'client_secret': client_secret})
-elif (cloud_type =='aws' and json_['use_sp_auth'].lower() == 'true'):  
+elif (cloud_type =='aws' and json_['use_sp_auth'].lower() == 'true'):
     client_secret = dbutils.secrets.get(json_['master_name_scope'], json_["client_secret_key"])
     json_.update({'token':token, 'client_secret': client_secret})
     mastername = ' '
@@ -71,7 +71,7 @@ else: #lets populate master key for accounts api
     mastername = dbutils.secrets.get(json_['master_name_scope'], json_['master_name_key'])
     masterpwd = dbutils.secrets.get(json_['master_pwd_scope'], json_['master_pwd_key'])
     json_.update({'token':token, 'mastername':mastername, 'masterpwd':masterpwd})
-    
+
 if (json_['use_mastercreds']) is False:
     tokenscope = json_['workspace_pat_scope']
     tokenkey = f"{json_['workspace_pat_token_prefix']}-{json_['workspace_id']}"
@@ -99,13 +99,13 @@ except Exception:
 
 # COMMAND ----------
 
-#if is_successful_ws: 
+#if is_successful_ws:
 if not is_successful_ws:
   dbutils.notebook.exit('Unsuccessful Workspace connection. Verify credentials.')
 
 # COMMAND ----------
 
-spark.sql(f"USE {json_['intermediate_schema']}")
+spark.sql(f"USE `{json_['intermediate_schema']}`")
 
 # COMMAND ----------
 
@@ -299,7 +299,7 @@ try:
     vList=df.collect()
     bootstrap('secretslist'+ '_' + workspace_id, secrets_client.get_secrets, scope_list=vList)
 except Exception:
-    loggr.exception("Exception encountered")    
+    loggr.exception("Exception encountered")
 
 # COMMAND ----------
 
@@ -524,7 +524,7 @@ try:
         metastore_id= vList[0]['metastore_id']
         bootstrap('systemschemas'+ '_' + workspace_id, uc_client.get_systemschemas, metastore_id=metastore_id)
 except Exception:
-    loggr.exception("Exception encountered")    
+    loggr.exception("Exception encountered")
 
 # COMMAND ----------
 
@@ -567,7 +567,7 @@ except:
 
 # COMMAND ----------
 
-# This is expensive. 
+# This is expensive.
 #bootstrap('wsnotebooks', workspace_client.get_all_notebooks)
 
 # COMMAND ----------

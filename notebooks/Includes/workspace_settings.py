@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC **Notebook name:** workspace_settings  
-# MAGIC **Functionality:** runs analysis logic on the workspace settings api respones and writes the results into a checks tables 
+# MAGIC **Notebook name:** workspace_settings
+# MAGIC **Functionality:** runs analysis logic on the workspace settings api respones and writes the results into a checks tables
 
 # COMMAND ----------
 
@@ -48,7 +48,7 @@ workspace_id = json_['workspace_id']
 
 # COMMAND ----------
 
-spark.sql(f"USE {json_['intermediate_schema']}")
+spark.sql(f"USE `{json_['intermediate_schema']}`")
 
 # COMMAND ----------
 
@@ -198,13 +198,13 @@ if enabled:
 id = '40' # Enforce User Isolation
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enforceUserIsolation(df): 
+def enforceUserIsolation(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
         value = row.value
         defn = {'defn' : row.defn.replace("'", '')}
-    if(value == 'true'): 
+    if(value == 'true'):
         return (id, 0, defn)
     else:
         return (id, 1, defn)
@@ -222,7 +222,7 @@ if enabled:
 id = '43' # Enable Enforce ImdsV2
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableEnforceImdsV2(df): 
+def enableEnforceImdsV2(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -243,10 +243,10 @@ if enabled:
 
 # COMMAND ----------
 
-id = '44' #Notebook export 
+id = '44' #Notebook export
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableExportNotebook(df): 
+def enableExportNotebook(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -270,7 +270,7 @@ if enabled:
 id = '45' #Notebook Table Clipboard Features
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableNotebookTableClipboard(df): 
+def enableNotebookTableClipboard(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -294,7 +294,7 @@ if enabled:
 id = '46' # Manage third-party iFraming prevention
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableXFrameOptions(df): 
+def enableXFrameOptions(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -318,7 +318,7 @@ if enabled:
 id = '47' # Manage MIME type sniffing prevention
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableXContentTypeOptions(df): 
+def enableXContentTypeOptions(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -342,7 +342,7 @@ if enabled:
 id = '48' # Manage XSS attack page rendering prevention
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableXXSSProtection(df): 
+def enableXXSSProtection(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -366,7 +366,7 @@ if enabled:
 id = '49' # Store Interactive Notebook Results in Customer Account
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def storeInteractiveNotebookResultsInCustomerAccount(df): 
+def storeInteractiveNotebookResultsInCustomerAccount(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -390,7 +390,7 @@ if enabled:
 id = '50' # Enable verbose audit logs
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableVerboseAuditLogs(df): 
+def enableVerboseAuditLogs(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -414,7 +414,7 @@ if enabled:
 id = '51' # Review and disable FileStore endpoint in Admin Console Workspace settings
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableFileStoreEndpoint(df): 
+def enableFileStoreEndpoint(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -438,7 +438,7 @@ if enabled:
 id = '63' # Legacy Global Init Scripts
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableDeprecatedGlobalInitScripts(df): 
+def enableDeprecatedGlobalInitScripts(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():
@@ -462,7 +462,7 @@ if enabled:
 id = '65' # Legacy Global Init Scripts
 enabled, sbp_rec = getSecurityBestPracticeRecord(id, cloud_type)
 
-def enableDeprecatedClusterNamedInitScripts(df): 
+def enableDeprecatedClusterNamedInitScripts(df):
     value = 'false'
     defn = {'defn' : ''}
     for row in df.collect():

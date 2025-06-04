@@ -148,7 +148,7 @@ def insertIntoControlTable(workspace_id, id, score, additional_details):
     # change this. Has to come via function.
     # orgId = dbutils.notebook.entry_point.getDbutils().notebook().getContext().tags().get('orgId').getOrElse(None)
     run_id = spark.sql(
-        f'select max(runID) from {json_["analysis_schema_name"]}.run_number_table'
+        f'select max(runID) from `{json_["analysis_schema_name"]}`.run_number_table'
     ).collect()[0][0]
     jsonstr = json.dumps(additional_details)
     sql = """INSERT INTO {}.`security_checks` (`workspaceid`, `id`, `score`, `additional_details`, `run_id`, `check_time`) 
@@ -176,7 +176,7 @@ def insertIntoInfoTable(workspace_id, name, value, category):
     # change this. Has to come via function.
     # orgId = dbutils.notebook.entry_point.getDbutils().notebook().getContext().tags().get('orgId').getOrElse(None)
     run_id = spark.sql(
-        f'select max(runID) from {json_["analysis_schema_name"]}.run_number_table'
+        f'select max(runID) from `{json_["analysis_schema_name"]}`.run_number_table'
     ).collect()[0][0]
     jsonstr = json.dumps(value)
     sql = """INSERT INTO {}.`account_info` (`workspaceid`,`name`, `value`, `category`, `run_id`, `check_time`) 
@@ -233,7 +233,7 @@ def readWorkspaceConfigFile():
 
 def getWorkspaceConfig():
     df = spark.sql(
-        f"""select * from {json_["analysis_schema_name"]}.account_workspaces"""
+        f"""select * from `{json_["analysis_schema_name"]}`.account_workspaces"""
     )
     return df
 
@@ -265,7 +265,7 @@ def readBestPracticesConfigsFile():
 
         prefix = getConfigPath()
         origfile = f"{prefix}/security_best_practices.csv"
-        
+
         schema_list = [
             "id",
             "check_id",
@@ -290,7 +290,7 @@ def readBestPracticesConfigsFile():
         security_best_practices_pd = pd.read_csv(
             origfile, header=0, usecols=schema_list
         ).rename(columns={doc_url: "doc_url"})
-        
+
         security_best_practices = spark.createDataFrame(
             security_best_practices_pd, schema
         ).select(
@@ -324,21 +324,21 @@ def load_sat_dasf_mapping():
   from os.path import exists
   import shutil
 
-  
+
   prefix = getConfigPath()
   origfile = f'{prefix}/sat_dasf_mapping.csv'
-    
+
   schema_list = ['sat_id', 'dasf_control_id','dasf_control_name']
 
   schema = '''sat_id int, dasf_control_id string,dasf_control_name string'''
 
   sat_dasf_mapping_pd = pd.read_csv(origfile, header=0, usecols=schema_list)
-    
+
   sat_dasf_mapping = (spark.createDataFrame(sat_dasf_mapping_pd, schema)
                             .select('sat_id', 'dasf_control_id','dasf_control_name'))
-    
+
   sat_dasf_mapping.write.format('delta').mode('overwrite').saveAsTable(json_["analysis_schema_name"]+'.sat_dasf_mapping')
-  display(sat_dasf_mapping) 
+  display(sat_dasf_mapping)
 
 
 # COMMAND ----------
@@ -346,7 +346,7 @@ def load_sat_dasf_mapping():
 
 def getSecurityBestPracticeRecord(id, cloud_type):
     df = spark.sql(
-        f"""select * from {json_["analysis_schema_name"]}.security_best_practices where id = '{id}' """
+        f"""select * from `{json_["analysis_schema_name"]}`.security_best_practices where id = '{id}' """
     )
     dict_elems = {}
     enable = 0
@@ -383,10 +383,10 @@ def basePath():
 
 
 def create_schema():
-    df = spark.sql(f'CREATE DATABASE IF NOT EXISTS {json_["analysis_schema_name"]}')
-    df = spark.sql(f'CREATE DATABASE IF NOT EXISTS {json_["intermediate_schema"]}')
+    df = spark.sql(f'CREATE DATABASE IF NOT EXISTS `{json_["analysis_schema_name"]}`')
+    df = spark.sql(f'CREATE DATABASE IF NOT EXISTS `{json_["intermediate_schema"]}`')
     df = spark.sql(
-        f"""CREATE TABLE IF NOT EXISTS {json_["analysis_schema_name"]}.run_number_table (
+        f"""CREATE TABLE IF NOT EXISTS `{json_["analysis_schema_name"]}`.run_number_table (
                         runID BIGINT GENERATED ALWAYS AS IDENTITY,
                         check_time TIMESTAMP 
                         )
@@ -402,7 +402,7 @@ def insertNewBatchRun():
 
     ts = time.time()
     df = spark.sql(
-        f'insert into {json_["analysis_schema_name"]}.run_number_table (check_time) values ({ts})'
+        f'insert into `{json_["analysis_schema_name"]}`.run_number_table (check_time) values ({ts})'
     )
 
 
@@ -414,10 +414,10 @@ def notifyworkspaceCompleted(workspaceID, completed):
 
     ts = time.time()
     runID = spark.sql(
-        f'select max(runID) from {json_["analysis_schema_name"]}.run_number_table'
+        f'select max(runID) from `{json_["analysis_schema_name"]}`.run_number_table'
     ).collect()[0][0]
     spark.sql(
-        f"""INSERT INTO {json_["analysis_schema_name"]}.workspace_run_complete (`workspace_id`,`run_id`, `completed`, `check_time`)  VALUES ({workspaceID}, {runID}, {completed}, cast({ts} as timestamp))"""
+        f"""INSERT INTO `{json_["analysis_schema_name"]}`.workspace_run_complete (`workspace_id`,`run_id`, `completed`, `check_time`)  VALUES ({workspaceID}, {runID}, {completed}, cast({ts} as timestamp))"""
     )
 
 
@@ -426,7 +426,7 @@ def notifyworkspaceCompleted(workspaceID, completed):
 
 def create_security_checks_table():
     df = spark.sql(
-        f"""CREATE TABLE IF NOT EXISTS {json_["analysis_schema_name"]}.security_checks ( 
+        f"""CREATE TABLE IF NOT EXISTS `{json_["analysis_schema_name"]}`.security_checks ( 
                 workspaceid string,
                 id int,
                 score integer, 
@@ -446,7 +446,7 @@ def create_security_checks_table():
 
 def create_account_info_table():
     df = spark.sql(
-        f"""CREATE TABLE IF NOT EXISTS {json_["analysis_schema_name"]}.account_info (
+        f"""CREATE TABLE IF NOT EXISTS `{json_["analysis_schema_name"]}`.account_info (
         workspaceid string,
         name string, 
         value map<string, string>, 
@@ -466,7 +466,7 @@ def create_account_info_table():
 
 def create_account_workspaces_table():
     df = spark.sql(
-        f"""CREATE TABLE IF NOT EXISTS {json_["analysis_schema_name"]}.account_workspaces (
+        f"""CREATE TABLE IF NOT EXISTS `{json_["analysis_schema_name"]}`.account_workspaces (
             workspace_id string,
             deployment_url string,
             workspace_name string,
@@ -487,7 +487,7 @@ def create_account_workspaces_table():
 
 def create_workspace_run_complete_table():
     df = spark.sql(
-        f"""CREATE TABLE IF NOT EXISTS {json_["analysis_schema_name"]}.workspace_run_complete(
+        f"""CREATE TABLE IF NOT EXISTS `{json_["analysis_schema_name"]}`.workspace_run_complete(
                     workspace_id string,
                     run_id bigint,
                     completed boolean,
@@ -503,7 +503,7 @@ def create_workspace_run_complete_table():
 def generateGCPWSToken(deployment_url, cred_file_path,target_principal):
     from google.oauth2 import service_account
     import gcsfs
-    import json 
+    import json
     gcp_accounts_url = 'https://accounts.gcp.databricks.com'
     target_scopes = [deployment_url]
     print(target_scopes)
@@ -512,7 +512,7 @@ def generateGCPWSToken(deployment_url, cred_file_path,target_principal):
     gcs_json_path = cred_file_path
     with gcs_file_system.open(gcs_json_path) as f:
       json_dict = json.load(f)
-      key = json.dumps(json_dict) 
+      key = json.dumps(json_dict)
     source_credentials = service_account.Credentials.from_service_account_info(json_dict,scopes=target_scopes)
     from google.auth import impersonated_credentials
     from google.auth.transport.requests import AuthorizedSession
@@ -531,7 +531,7 @@ def generateGCPWSToken(deployment_url, cred_file_path,target_principal):
     authed_session = AuthorizedSession(creds)
     resp = authed_session.get(gcp_accounts_url)
     return creds.token
-    
+
 
 # COMMAND ----------
 
@@ -553,9 +553,9 @@ def process_json_schema(df):
 
     for row in df_with_schemas.select("schema").collect():
         schema_str = row.schema
-        # Remove the outer 'STRUCT<' and '>' 
+        # Remove the outer 'STRUCT<' and '>'
         inner_schema = schema_str[7:-1]
-        schema = StructType.fromDDL(inner_schema)        
+        schema = StructType.fromDDL(inner_schema)
         for field in schema.fields:
             all_fields[field.name] = field
     final_struct = StructType(list(all_fields.values()))

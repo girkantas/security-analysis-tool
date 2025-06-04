@@ -114,7 +114,7 @@ def generateWorkspaceConfigFile():
 
 # COMMAND ----------
 
-spark.sql(f"USE {json_['intermediate_schema']}")
+spark.sql(f"USE `{json_['intermediate_schema']}`")
 
 # COMMAND ----------
 
